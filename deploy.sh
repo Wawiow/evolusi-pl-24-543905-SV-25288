@@ -25,3 +25,5 @@ php artisan queue:restart
 
 # 7. Buka pintu kembali
 php artisan up
+
+# P3 CI/CD workflow test
