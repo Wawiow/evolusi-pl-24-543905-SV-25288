@@ -1,5 +1,5 @@
 <template>
-    <section id="profile" class="profile">
+    <section id="about" class="profile">
         <div class="profile-container">
 
             <div class="profile-image">
