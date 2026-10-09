@@ -1,6 +1,7 @@
-name: CI
+name: P3 CI/CD
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -12,9 +13,28 @@ on:
       - dev
 
 jobs:
-  test:
-    name: Laravel Test
+  build:
+    name: Build
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - name: Checkout repository
@@ -51,22 +71,44 @@ jobs:
       - name: Run Laravel tests
         run: php artisan test
 
-  frontend:
-    name: Frontend Build
+  staging:
+    name: Staging
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Simulate staging deployment
+        run: echo "Deploying application to staging..."
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
+  production:
+    name: Production
+    runs-on: ubuntu-latest
+    needs: staging
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
 
-      - name: Install npm dependencies
-        run: npm ci
+    steps:
+      - name: Deploy step 1
+        run: echo "1. php artisan down --retry=60"
 
-      - name: Build frontend
-        run: npm run build
+      - name: Deploy step 2
+        run: echo "2. git pull origin main"
+
+      - name: Deploy step 3
+        run: echo "3. composer install --no-dev --optimize-autoloader"
+
+      - name: Deploy step 4
+        run: echo "4. php artisan migrate --force"
+
+      - name: Deploy step 5
+        run: |
+          echo "5. php artisan config:cache"
+          echo "   php artisan route:cache"
+          echo "   php artisan view:cache"
+
+      - name: Deploy step 6
+        run: echo "6. php artisan queue:restart"
+
+      - name: Deploy step 7
+        run: echo "7. php artisan up"
